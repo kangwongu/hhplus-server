@@ -1,8 +1,7 @@
 ## 프로젝트
 
-## Getting Started
-
-### Prerequisites
+### 문서
+- [인프라 구성도](./docs/infra.md)
 
 #### Running Docker Containers
 
