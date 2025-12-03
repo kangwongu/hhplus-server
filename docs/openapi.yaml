@@ -1,0 +1,642 @@
+openapi: 3.0.0
+info:
+  title: E-commerce API
+  description: 이커머스 플랫폼 API 명세
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Products
+    description: 상품 관련 API
+  - name: Orders
+    description: 주문/결제 관련 API
+  - name: Points
+    description: 포인트 관련 API
+  - name: Coupons
+    description: 쿠폰 관련 API
+
+paths:
+  # ===== 상품 조회 API =====
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: 상품 목록 조회
+      description: 전체 상품 목록을 조회합니다. 조회 시점의 정확한 잔여수량을 반환합니다.
+      responses:
+        '200':
+          description: 상품 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductSummary'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/products/{productId}:
+    get:
+      tags:
+        - Products
+      summary: 상품 상세 조회
+      description: 특정 상품의 상세 정보를 조회합니다.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: 상품 ID
+      responses:
+        '200':
+          description: 상품 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/products/popular:
+    get:
+      tags:
+        - Products
+      summary: 인기 상품 조회 (선택)
+      description: 최근 3일간 가장 많이 팔린 상위 5개 상품을 조회합니다.
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 3
+          description: 조회 기간 (일)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+          description: 조회할 상품 개수
+      responses:
+        '200':
+          description: 인기 상품 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/ProductSummary'
+                        - type: object
+                          properties:
+                            salesCount:
+                              type: integer
+                              description: 판매 수량
+                              example: 150
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ===== 주문/결제 API =====
+  /api/orders:
+    post:
+      tags:
+        - Orders
+      summary: 주문 생성 및 결제
+      description: |
+        상품을 주문하고 결제를 진행합니다.
+        - 기 충전된 포인트로 결제합니다.
+        - 유효한 쿠폰이 있으면 할인이 적용됩니다.
+        - 결제 성공 시 주문 정보가 데이터 플랫폼으로 전송됩니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: 주문 생성 및 결제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/OrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ===== 포인트 API =====
+  /api/points/charge:
+    post:
+      tags:
+        - Points
+      summary: 포인트 충전
+      description: 사용자의 포인트를 충전합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChargePointRequest'
+      responses:
+        '200':
+          description: 포인트 충전 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PointResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/users/{userId}/points:
+    get:
+      tags:
+        - Points
+      summary: 포인트 잔액 조회
+      description: 사용자의 현재 포인트 잔액을 조회합니다.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: 사용자 ID
+      responses:
+        '200':
+          description: 포인트 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PointResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ===== 쿠폰 API =====
+  /api/coupons/{couponId}/issue:
+    post:
+      tags:
+        - Coupons
+      summary: 쿠폰 발급 (선택)
+      description: 선착순으로 쿠폰을 발급받습니다. 잔여 쿠폰이 있어야 발급 가능합니다.
+      parameters:
+        - name: couponId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: 쿠폰 ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: integer
+                  format: int64
+                  description: 사용자 ID
+                  example: 1
+      responses:
+        '201':
+          description: 쿠폰 발급 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/UserCouponResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/users/{userId}/coupons:
+    get:
+      tags:
+        - Coupons
+      summary: 보유 쿠폰 목록 조회 (선택)
+      description: 사용자가 보유한 쿠폰 목록을 조회합니다.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: 사용자 ID
+        - name: onlyAvailable
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: true인 경우 사용 가능한 쿠폰만 조회
+      responses:
+        '200':
+          description: 쿠폰 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserCouponResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    # ===== Product Schemas =====
+    Product:
+      type: object
+      properties:
+        seq:
+          type: integer
+          format: int64
+          description: 상품 ID
+          example: 1
+        name:
+          type: string
+          description: 상품명
+          example: "노트북"
+        price:
+          type: integer
+          format: int64
+          description: 가격
+          example: 1500000
+        stock:
+          type: integer
+          description: 재고 수량
+          example: 50
+        status:
+          type: string
+          enum: [AVAILABLE, OUT_OF_STOCK, DISCONTINUED]
+          description: 상품 상태
+          example: AVAILABLE
+        description:
+          type: string
+          description: 상품 설명
+          example: "고성능 노트북"
+        createDate:
+          type: string
+          format: date-time
+          description: 생성일시
+        updateDate:
+          type: string
+          format: date-time
+          description: 수정일시
+
+    ProductSummary:
+      type: object
+      properties:
+        seq:
+          type: integer
+          format: int64
+          description: 상품 ID
+          example: 1
+        name:
+          type: string
+          description: 상품명
+          example: "노트북"
+        price:
+          type: integer
+          format: int64
+          description: 가격
+          example: 1500000
+        stock:
+          type: integer
+          description: 재고 수량
+          example: 50
+
+    # ===== Order Schemas =====
+    CreateOrderRequest:
+      type: object
+      required:
+        - userId
+        - orderItems
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: 사용자 ID
+          example: 1
+        orderItems:
+          type: array
+          description: 주문 상품 목록
+          items:
+            type: object
+            required:
+              - productId
+              - quantity
+            properties:
+              productId:
+                type: integer
+                format: int64
+                description: 상품 ID
+                example: 1
+              quantity:
+                type: integer
+                description: 주문 수량
+                example: 2
+        couponId:
+          type: integer
+          format: int64
+          description: 사용할 쿠폰 ID (선택)
+          example: 1
+
+    OrderResponse:
+      type: object
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: 주문 ID
+          example: 1
+        orderKey:
+          type: string
+          description: 주문 고유키
+          example: "ORD-20250101-ABC123"
+        orderStatus:
+          type: string
+          enum: [CREATED, PAID, CANCELLED]
+          description: 주문 상태
+          example: PAID
+        totalPrice:
+          type: integer
+          format: int64
+          description: 총 주문 금액
+          example: 3000000
+        discountAmount:
+          type: integer
+          format: int64
+          description: 할인 금액
+          example: 300000
+        paidAmount:
+          type: integer
+          format: int64
+          description: 실제 결제 금액
+          example: 2700000
+        paymentStatus:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED]
+          description: 결제 상태
+          example: COMPLETED
+        orderItems:
+          type: array
+          description: 주문 상품 목록
+          items:
+            type: object
+            properties:
+              productId:
+                type: integer
+                format: int64
+                example: 1
+              productName:
+                type: string
+                example: "노트북"
+              quantity:
+                type: integer
+                example: 2
+              price:
+                type: integer
+                format: int64
+                example: 1500000
+        createDate:
+          type: string
+          format: date-time
+          description: 주문 생성일시
+
+    # ===== Point Schemas =====
+    ChargePointRequest:
+      type: object
+      required:
+        - userId
+        - amount
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: 사용자 ID
+          example: 1
+        amount:
+          type: integer
+          format: int64
+          description: 충전 금액
+          example: 100000
+          minimum: 1000
+
+    PointResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: 사용자 ID
+          example: 1
+        balance:
+          type: integer
+          format: int64
+          description: 현재 잔액
+          example: 500000
+        updateDate:
+          type: string
+          format: date-time
+          description: 마지막 업데이트 일시
+
+    # ===== Coupon Schemas =====
+    Coupon:
+      type: object
+      properties:
+        seq:
+          type: integer
+          format: int64
+          description: 쿠폰 ID
+          example: 1
+        name:
+          type: string
+          description: 쿠폰명
+          example: "신규가입 10% 할인"
+        discountType:
+          type: string
+          enum: [PERCENT, AMOUNT]
+          description: 할인 타입
+          example: PERCENT
+        discountValue:
+          type: integer
+          format: int64
+          description: 할인 값 (PERCENT인 경우 1-100, AMOUNT인 경우 할인 금액)
+          example: 10
+        remainCount:
+          type: integer
+          description: 잔여 발급 가능 수량
+          example: 100
+        createDate:
+          type: string
+          format: date-time
+          description: 생성일시
+        updateDate:
+          type: string
+          format: date-time
+          description: 수정일시
+
+    UserCouponResponse:
+      type: object
+      properties:
+        userSeq:
+          type: integer
+          format: int64
+          description: 사용자 ID
+          example: 1
+        couponSeq:
+          type: integer
+          format: int64
+          description: 쿠폰 ID
+          example: 1
+        couponName:
+          type: string
+          description: 쿠폰명
+          example: "신규가입 10% 할인"
+        discountType:
+          type: string
+          enum: [PERCENT, AMOUNT]
+          description: 할인 타입
+          example: PERCENT
+        discountValue:
+          type: integer
+          format: int64
+          description: 할인 값
+          example: 10
+        used:
+          type: boolean
+          description: 사용 여부
+          example: false
+        expiredAt:
+          type: string
+          format: date-time
+          description: 만료 시간
+        createDate:
+          type: string
+          format: date-time
+          description: 발급일시
+
+    # ===== Common Schemas =====
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: 에러 코드
+              example: "INVALID_REQUEST"
+            message:
+              type: string
+              description: 에러 메시지
+              example: "잘못된 요청입니다."
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "INVALID_REQUEST"
+              message: "요청 파라미터가 올바르지 않습니다."
+
+    NotFound:
+      description: 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "요청한 리소스를 찾을 수 없습니다."
+
+    InternalServerError:
+      description: 서버 내부 오류
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "서버 내부 오류가 발생했습니다."
