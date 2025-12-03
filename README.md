@@ -3,6 +3,7 @@
 ### 문서
 - [인프라 구성도](./docs/infra.md)
 - [ERD](./docs/erd.md)
+- [API 명세서](./docs/openapi.yaml)
 
 
 #### Running Docker Containers
