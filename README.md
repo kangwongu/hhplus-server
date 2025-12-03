@@ -2,6 +2,7 @@
 
 ### 문서
 - [인프라 구성도](./docs/infra.md)
+- [ERD](./docs/erd.md)
 
 #### Running Docker Containers
 
