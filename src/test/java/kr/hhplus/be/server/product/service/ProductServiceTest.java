@@ -31,7 +31,7 @@ class ProductServiceTest {
     ProductService sut;
 
     @Test
-    @DisplayName("제품 상태별로 검색을 하면 해당 조건에 맞는 제품 목록을 반환한다")
+    @DisplayName("제품 상태로 검색하면 조건에 맞는 제품 목록이 조회된다")
     void readProductsByProductStatus() {
         // given
         Pageable pageable = PageRequest.of(0, 10);
@@ -59,7 +59,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("제품 상태없이 검색을 하면 제품 상태 관계없이 모든 제품을 반환한다.")
+    @DisplayName("제품 상태 없이 검색하면 모든 제품이 조회된다")
     void readProductsNoProductStatus() {
         // given
         Pageable pageable = PageRequest.of(0, 10);
@@ -93,7 +93,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("ID로 상세 조회하면 해당 제품을 반환한다")
+    @DisplayName("ID로 상세 조회하면 해당 제품이 조회된다")
     void readProductById() {
         // given
         ProductEntity product = ProductEntity.of("맥북", 2_000_000L, ProductStatus.AVAILABLE, 10, "M칩 탑재");
@@ -111,7 +111,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 제품의 ID로 상세 조회하면 예외을 반환한다")
+    @DisplayName("존재하지 않는 제품 ID로 상세 조회하면 조회가 거부된다")
     void readProductByNotExistId() {
         // when
         // then

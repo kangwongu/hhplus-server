@@ -18,7 +18,7 @@ public class PointConcurrencyTest {
     @Autowired PointRepository pointRepository;
 
     @Test
-    @DisplayName("동시에 여러번 충전을 시도해도, 정상적으로 충전된다")
+    @DisplayName("동시 충전이 발생해도 총 충전액만큼 잔액이 증가한다")
     void rechargeConcurrency() throws InterruptedException {
         // given
         long userSeq = 1L;

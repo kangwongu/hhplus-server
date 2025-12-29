@@ -26,7 +26,7 @@ class PointServiceTest {
     PointService sut;
 
     @Test
-    @DisplayName("포인트가 없을 때 충전하면 신규 엔티티를 생성하고 잔액을 반환한다")
+    @DisplayName("보유 포인트가 없으면 충전 시 잔액이 반영된다")
     void rechargeCreatesWhenAbsent() {
         // given
         long userSeq = 1L;
@@ -44,7 +44,7 @@ class PointServiceTest {
     }
 
     @Test
-    @DisplayName("기존 포인트가 있을 때 충전하면 잔액이 누적된다")
+    @DisplayName("보유 포인트가 있으면 충전 시 잔액이 누적된다")
     void rechargeUpdatesWhenPresent() {
         // given
         long userSeq = 2L;
@@ -63,7 +63,7 @@ class PointServiceTest {
     }
 
     @Test
-    @DisplayName("충전 금액이 0 이하이면 예외를 반환한다.")
+    @DisplayName("충전 금액이 0 이하이면 충전이 거부된다")
     void rechargeInvalidAmountThrows() {
         // given
         long userSeq = 3L;
@@ -81,7 +81,7 @@ class PointServiceTest {
     }
 
     @Test
-    @DisplayName("포인트 잔액 조회 - 존재하면 잔액을 반환한다")
+    @DisplayName("보유 포인트가 있으면 잔액이 조회된다")
     void getBalancePresent() {
         // given
         long userSeq = 4L;
@@ -98,7 +98,7 @@ class PointServiceTest {
     }
 
     @Test
-    @DisplayName("포인트 잔액 조회 - 없으면 0을 반환한다")
+    @DisplayName("보유 포인트가 없으면 잔액 조회 결과는 0원이다")
     void getBalanceAbsentReturnsZero() {
         // given
         long userSeq = 5L;
